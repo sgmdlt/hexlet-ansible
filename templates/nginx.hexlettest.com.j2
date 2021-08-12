@@ -1,0 +1,9 @@
+server {
+  listen         80;
+  server_name    {{ hostname }};
+  client_max_body_size 10M;
+
+  root {{ www_data_path }};
+
+  keepalive_timeout   70;
+}

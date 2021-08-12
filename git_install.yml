@@ -1,4 +1,5 @@
 - hosts: ocean
+  gather_facts: no
   tasks:
     - name: install git
       # apt-get update && apt-get install git
@@ -7,3 +8,4 @@
         state: present
         update_cache: yes
       become: yes
+      tags: git

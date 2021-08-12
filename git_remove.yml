@@ -1,7 +1,10 @@
 - hosts: ocean
+  gather_facts: no
   tasks:
     - name: remove git
+      # apt remove git
       ansible.builtin.apt:
         name: git
         state: absent
       become: yes
+      tags: git

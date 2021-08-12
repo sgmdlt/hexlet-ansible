@@ -1,0 +1,72 @@
+- hosts: localhost
+  gather_facts: no
+
+  vars:
+    nginx_configs_path: /tmp/nginx/conf.d
+    hostname: hexlettest.com
+    www_data_path: "/tmp/{{ hostname }}"
+    nginx_site_config_path: "{{ nginx_configs_path }}/{{ hostname }}"
+    
+    
+
+  tasks:
+
+    # BEGIN (write your solution here)
+    - name: ngnix up
+      tags: ngnix
+      block:
+      - name: create ngnix dir
+        ansible.builtin.file:
+          path: '{{ nginx_configs_path }}'
+          state: directory
+      
+      - name: copy templates to ngnix dir
+        ansible.builtin.template:
+          src: 'templates/nginx.{{ hostname }}.j2'
+          dest: '{{ nginx_site_config_path }}'
+    
+    - name: html up
+      tags: html
+      block:
+      - name: create html dir
+        ansible.builtin.file:
+          path: '{{ www_data_path }}'
+          state: directory
+
+      - name: copy templates to html dir
+        ansible.builtin.template:
+          src: templates/index.html.j2
+          dest: '{{ www_data_path }}/index.html'
+
+    - name: remove all
+      tags: remove
+      ansible.builtin.file:
+        path: '{{ item }}'
+        state: absent
+      with_items:
+        - "{{ www_data_path }}"
+        - "{{ www_data_path }}/index.html"
+        - "{{ nginx_configs_path }}"
+        - "{{ nginx_site_config_path }}"
+
+    # END
+
+    - name: Retrieve file system status
+      stat:
+        path: "{{ item }}"
+        get_md5: false
+        get_checksum: false
+        get_attributes: false
+        get_mime: false
+      with_items:
+        - "{{ www_data_path }}"
+        - "{{ www_data_path }}/index.html"
+        - "{{ nginx_configs_path }}"
+        - "{{ nginx_site_config_path }}"
+      register: results
+
+    - name: Check all files and dirs exists
+      fail:
+        msg: "Expected {{ item.item }} to be exists"
+      when: not item.stat.exists
+      with_items: "{{ results.results }}"
