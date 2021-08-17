@@ -1,0 +1,42 @@
+# Setup base server without clients
+- name: Setup vpn server
+  hosts: vpn_server
+  gather_facts: yes
+  vars:
+    path: "/etc/wireguard"
+  
+  tasks:
+
+  - name: Install wireguard package
+    apt:
+      name: wireguard
+      state: present
+      update_cache: yes
+    
+  - name: Mkdirs
+    file:
+      path: '{{ path }}'
+      state: directory
+  
+  - name: Create wireguard server config
+    template:
+      src: base_wg0.conf.j2
+      dest: '{{path}}/wg0.conf'
+      owner: root
+      group: root
+      mode: '0600'
+
+  - name: Enable ip-forwarding
+    sysctl:
+      name: net.ipv4.ip_forward
+      value: "1"
+      state: present
+      sysctl_set: yes
+      reload: yes
+  
+  - name: Start wireguard and enable on boot
+    systemd:
+      name: wg-quick@wg0
+      enabled: yes
+      state: started
+  

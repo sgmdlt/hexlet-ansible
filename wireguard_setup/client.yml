@@ -1,0 +1,102 @@
+### Setup clients and reload server with added peers ###
+
+# Gather facts from server so we can use its IP
+- hosts: vpn_server
+  name: Gather facts from server
+  become: yes
+  tasks: [ ]
+
+
+- name: Setup clients
+  hosts: clients
+  vars:
+    # Use system python so apt package is available
+    ansible_python_interpreter: "/usr/bin/env python"
+    server_ip: "{{ hostvars['vpn_server'].ansible_wg0.ipv4.address}}/24"
+    path: "$HOME/test"
+    client_ip: "{{ server_ip | ipaddr('next_usable') }}/32"
+
+  tasks:
+
+  - name: Install wireguard package
+    become: yes
+    apt:
+      name: wireguard
+      state: present
+      update_cache: yes
+    register: apt_action
+    retries: 100
+    until: apt_action is success or ('Failed to lock apt for exclusive operation' not in apt_action.msg and '/var/lib/dpkg/lock' not in apt_action.msg)
+
+  - name: Mkdirs
+    file:
+      path: '{{ path }}'
+      state: directory
+
+  - name: Generate private key
+    become: yes
+    shell:
+      cmd: umask 077 && wg genkey | tee privatekey | wg pubkey > publickey
+      chdir: '{{ path }}'
+      creates: '{{ path }}/publickey'
+    
+  - name: Get public key
+    command: cat '{{ path }}/publickey'
+    register: publickey
+    changed_when: False
+
+  - name: Print public key
+    ansible.builtin.debug: 
+      msg={{ publickey.stdout }}
+
+  - name: Set fact public key
+    set_fact:
+      pubkey: "{{ publickey.stdout }}"  
+
+  - name: Create client wireguard config
+    template:
+      src: client_wg0.conf.j2
+      dest: '{{ path }}/wg0.conf'
+      owner: root
+      group: root
+      mode: '0600'
+
+
+ # Gather facts from clients so we can use their pubkey
+- hosts: clients
+  name: Gather facts from clients
+  tasks: [ ]
+
+
+  ### Update server setup ###
+- name: Setup new server config
+  hosts: vpn_server
+  become: yes
+  gather_facts: no
+  vars:
+    path: "$HOME/test"
+  
+  tasks:
+
+  - name: Create new server config with peers
+    template:
+      src: server_wg0.conf.j2
+      dest: '{{ path }}/wg0.conf'
+      owner: root
+      group: root
+      mode: '0600'
+
+  - name: Restart server
+    shell: wg-quick down wg0; wg-quick up wg0
+    args:
+      executable: /bin/bash
+
+  
+- name: Start vpn on clients
+  hosts: clients
+  become: yes
+  tasks:
+  - name: start wireguard
+    command: wg-quick up wg0
+
+  
