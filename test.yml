@@ -1,0 +1,37 @@
+- name: test iteration
+  hosts: vpn_server
+  gather_facts: no
+  vars:
+    path: $HOME/test
+    number: "{{ 1000 | random }}"
+  tasks:
+  - name: Mkdirs
+    file:
+      path: '{{ path }}'
+      state: directory
+  - name: Generate private key
+    shell:
+      cmd: umask 077 && wg genkey | tee privatekey | wg pubkey > publickey_"{{item}}"
+      chdir: '{{ path }}'
+      creates: '{{ path }}/publickey_{{ item }}'
+    loop: "{{ groups['clients'] }}"
+  
+  - name: Get public key
+    command: cat '{{ path }}/publickey_{{ item }}'
+    register: publickeys_contents
+    changed_when: False
+    loop: "{{ groups['clients'] }}"
+
+  - name: Print public keys
+    debug: 
+      msg: " ----> {{ item.stdout }}"
+    loop: "{{ publickeys_contents.results }}"
+
+  - name: create client wireguard config
+    template:
+      src: client_wg0.conf.j2
+      dest: '{{ path }}/wg_{{ item }}.conf'
+      owner: root
+      group: root
+      mode: '0600'
+    loop: "{{ groups['clients'] }}"
