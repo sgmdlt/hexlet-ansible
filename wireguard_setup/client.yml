@@ -1,18 +1,9 @@
 ### Setup clients and reload server with added peers ###
 
-# Gather facts from server so we can use its IP
-- hosts: vpn_server
-  name: Gather facts from server
-  become: yes
-  tasks: [ ]
-
-
 - name: Setup clients
   hosts: clients
   vars:
     # Use system python so apt package is available
-    ansible_python_interpreter: "/usr/bin/env python"
-    server_ip: "{{ hostvars['vpn_server'].ansible_wg0.ipv4.address}}/24"
     path: "$HOME/test"
     client_ip: "{{ server_ip | ipaddr('next_usable') }}/32"
 
@@ -54,6 +45,7 @@
       pubkey: "{{ publickey.stdout }}"  
 
   - name: Create client wireguard config
+    become: yes
     template:
       src: client_wg0.conf.j2
       dest: '{{ path }}/wg0.conf'
@@ -79,6 +71,7 @@
   tasks:
 
   - name: Create new server config with peers
+    become: yes
     template:
       src: server_wg0.conf.j2
       dest: '{{ path }}/wg0.conf'

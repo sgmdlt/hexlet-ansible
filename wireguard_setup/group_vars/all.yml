@@ -1,4 +1,5 @@
 ---
+server_ip: 192.168.99.1/24
 server_pubkey: qJ/VCrbmEknXJbBv8U5oY4pyw1EMSMHSlijOB7T3iSU=
 server_privkey: !vault |
       $ANSIBLE_VAULT;1.1;AES256
