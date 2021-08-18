@@ -5,7 +5,7 @@ Address = {{ client_ip }}
 # Load your privatekey from file
 PostUp = wg set %i private-key /etc/wireguard/privatekey
 # Also ping the vpn server to ensure the tunnel is initialized
-PostUp = ping -c1 10.0.0.1
+PostUp = ping -c1 {{ server_ip | ipaddr('host') }}
 
 [Peer]
 # VPN server's wireguard public key
@@ -16,10 +16,10 @@ PublicKey = {{ server_pubkey }}
 Endpoint = {{ hostvars['vpn_server'].ansible_host }}:52250
 
 # To accept traffic from and send traffic to any IP address through the VPN
-AllowedIPs = 0.0.0.0/0
+#AllowedIPs = 0.0.0.0/0
 
 # {{server_ip}} is the VPN subnet
-# AllowedIPs = {{ server_ip }}
+AllowedIPs = {{ server_ip }}
 
 # To also accept and send traffic to a VPC subnet at 10.110.0.0/20
 # AllowedIPs = 10.0.0.0/24,10.110.0.0/20

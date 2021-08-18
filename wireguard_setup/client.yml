@@ -4,7 +4,7 @@
   hosts: clients
   vars:
     # Use system python so apt package is available
-    path: "$HOME/test"
+    path: "/etc/wireguard"
     client_ip: "{{ server_ip | ipaddr('next_usable') }}/32"
 
   tasks:
@@ -66,8 +66,9 @@
   become: yes
   gather_facts: no
   vars:
-    path: "$HOME/test"
-  
+    path: "/etc/wireguard"
+    client_ip: "{{ server_ip | ipaddr('next_usable') }}/32"
+
   tasks:
 
   - name: Create new server config with peers
@@ -80,6 +81,7 @@
       mode: '0600'
 
   - name: Restart server
+    become: yes
     shell: wg-quick down wg0; wg-quick up wg0
     args:
       executable: /bin/bash

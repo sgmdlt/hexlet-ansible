@@ -7,7 +7,7 @@ PrivateKey = {{ server_privkey }}
 {% for client in groups['clients'] %}
 [Peer]
 PublicKey = {{ hostvars[client].pubkey }}
-AllowedIPs = 0.0.0.0/0
+AllowedIPs = {{ client_ip }}
 
 {% endfor %}
 
